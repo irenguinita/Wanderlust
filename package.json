@@ -1,0 +1,17 @@
+{
+  "name": "freshblazorapp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+  "build:css": "npx @tailwindcss/cli -i ./Styles/app.css -o ./wwwroot/css/app.min.css --minify",
+  "watch:css": "npx @tailwindcss/cli -i ./Styles/app.css -o ./wwwroot/css/app.min.css --watch"
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}

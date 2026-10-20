@@ -1,0 +1,45 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Users\\L23Y16W23\\FreshBlazorApp\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\FreshBlazorApp.bundle.scp.css",
+      "PackagePath": "staticwebassets\\FreshBlazorApp.bundle.scp.css"
+    },
+    {
+      "Id": "C:\\Users\\L23Y16W23\\FreshBlazorApp\\wwwroot\\app.css",
+      "PackagePath": "staticwebassets\\app.css"
+    },
+    {
+      "Id": "C:\\Users\\L23Y16W23\\FreshBlazorApp\\wwwroot\\bootstrap\\bootstrap.min.css",
+      "PackagePath": "staticwebassets\\bootstrap\\bootstrap.min.css"
+    },
+    {
+      "Id": "C:\\Users\\L23Y16W23\\FreshBlazorApp\\wwwroot\\bootstrap\\bootstrap.min.css.map",
+      "PackagePath": "staticwebassets\\bootstrap\\bootstrap.min.css.map"
+    },
+    {
+      "Id": "C:\\Users\\L23Y16W23\\FreshBlazorApp\\wwwroot\\css\\app.min.css",
+      "PackagePath": "staticwebassets\\css\\app.min.css"
+    },
+    {
+      "Id": "C:\\Users\\L23Y16W23\\FreshBlazorApp\\wwwroot\\favicon.png",
+      "PackagePath": "staticwebassets\\favicon.png"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.FreshBlazorApp.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.FreshBlazorApp.props",
+      "PackagePath": "build\\FreshBlazorApp.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.FreshBlazorApp.props",
+      "PackagePath": "buildMultiTargeting\\FreshBlazorApp.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.FreshBlazorApp.props",
+      "PackagePath": "buildTransitive\\FreshBlazorApp.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

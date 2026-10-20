@@ -1,0 +1,322 @@
+@page "/details/{Id:int}"
+@rendermode InteractiveServer
+@using FreshBlazorApp.Models
+@inject ItineraryService Service
+@inject NavigationManager Nav
+
+<PageTitle>@(package?.Name ?? "Package Details") — Wanderlust</PageTitle>
+
+<div class="min-h-screen bg-[#f1e5c8] text-[#3b2a1e] font-['Futura','Century_Gothic','Trebuchet_MS',sans-serif] antialiased">
+
+    <!-- 70s stripe band -->
+    <div aria-hidden="true">
+        <div class="h-2 bg-[#e8672a]"></div>
+        <div class="h-2 bg-[#e9a825]"></div>
+        <div class="h-2 bg-[#1f7a7a]"></div>
+    </div>
+
+    <!-- Terminal header -->
+    <header class="bg-[#3b2a1e] text-[#f4ead2] sticky top-0 z-20 shadow-lg">
+        <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <span class="w-9 h-9 rounded-full bg-[#e8672a] text-[#3b2a1e] flex items-center justify-center text-lg font-black">✈</span>
+                <span class="text-2xl font-black tracking-[0.25em]">WANDERLUST</span>
+                <span class="hidden md:inline text-[11px] tracking-[0.3em] uppercase text-[#e9a825] border-l border-[#e9a825]/40 pl-4">
+                    @(IsBookingView ? "Ticket Desk" : "Check-in Desk")
+                </span>
+            </div>
+
+            <button @onclick='() => Nav.NavigateTo(IsBookingView ? "/itinerary" : "/")'
+                    class="flex items-center gap-2 bg-[#e9a825] hover:bg-[#f4ead2] text-[#3b2a1e] text-xs font-black tracking-[0.2em] uppercase px-5 py-2 rounded-full transition-colors cursor-pointer active:scale-95">
+                <span>←</span>
+                <span>@(IsBookingView ? "My Tickets" : "Departures")</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-6 py-8">
+        @if (package is null)
+        {
+            <div class="bg-[#f8f0dc] border-4 border-dashed border-[#3b2a1e]/30 rounded-2xl p-16 text-center">
+                <div class="text-6xl mb-3 opacity-60">🛬</div>
+                <h2 class="text-2xl font-black tracking-[0.2em] uppercase text-[#c8372d]">Flight Cancelled</h2>
+                <p class="text-sm font-bold text-[#3b2a1e]/60 mt-2">The selected travel package is unavailable or has been removed.</p>
+                <button @onclick='() => Nav.NavigateTo("/")'
+                        class="mt-6 bg-[#e8672a] hover:bg-[#3b2a1e] text-[#fff7e6] text-xs font-black tracking-[0.25em] uppercase py-3 px-7 rounded-full border-4 border-[#3b2a1e] shadow-[4px_4px_0_0_#3b2a1e] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
+                    Return to Departures
+                </button>
+            </div>
+        }
+        else
+        {
+            var isAdv = package is AdventurePackage;
+
+            <!-- Airmail border -->
+            <div class="p-2.5 rounded-3xl shadow-[0_12px_0_0_rgba(59,42,30,0.25)]"
+                 style="background: repeating-linear-gradient(135deg,#c8372d 0 14px,#f8f0dc 14px 22px,#1f5fa8 22px 36px,#f8f0dc 36px 44px);">
+                <div class="relative bg-[#f8f0dc] rounded-[1.25rem] overflow-hidden">
+
+                    <!-- Hero -->
+                    <div class="relative aspect-[21/9] w-full bg-[#e4d6b4] overflow-hidden">
+                        <img src="@package.ImageUrl" alt="@package.Name" class="w-full h-full object-cover" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#2a1f17]/80 via-transparent to-transparent"></div>
+
+                        <span class="absolute top-4 left-4 bg-[#3b2a1e] text-[#e9a825] text-[10px] font-black tracking-[0.3em] uppercase px-3 py-1 rounded-full">
+                            @(IsBookingView ? "Issued Ticket" : "Boarding Pass")
+                        </span>
+
+                        <div class="absolute bottom-4 left-6 right-6 flex items-end justify-between text-[#f4ead2]">
+                            <div class="text-5xl sm:text-6xl font-black tracking-[0.15em] leading-none">@Code(package)</div>
+                            <div class="bg-[#e9a825] text-[#3b2a1e] border-4 border-[#3b2a1e] rounded-xl px-3 py-1 text-center">
+                                <div class="text-[9px] font-black tracking-[0.25em] uppercase">Gate</div>
+                                <div class="text-2xl font-black leading-none">G@(package.Id)</div>
+                            </div>
+                        </div>
+
+                        @if (IsBookingView)
+                        {
+                            <div class="absolute top-4 right-4 rotate-12 border-4 border-double border-[#c8372d] text-[#c8372d] rounded-lg px-3 py-1 text-center bg-[#f8f0dc]/90">
+                                <div class="text-[9px] font-black tracking-[0.3em] uppercase">Status</div>
+                                <div class="text-sm font-black tracking-widest uppercase">Reserved</div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="p-6 sm:p-10">
+                        <!-- Title block -->
+                        <div class="flex flex-wrap items-center gap-2 mb-3">
+                            <span class="@(isAdv ? "bg-[#e8672a] text-[#2a1f17]" : "bg-[#1f7a7a] text-[#f4ead2]") text-[10px] font-black tracking-[0.25em] uppercase px-3 py-1 rounded-full">
+                                @(isAdv ? "🧗" : "🍹") @package.GetPackageType()
+                            </span>
+                            @if (package is AdventurePackage adv)
+                            {
+                                <span class="@(adv.DifficultyLevel == "Extreme" ? "bg-[#c8372d] text-white animate-pulse" : "bg-[#e9a825] text-[#2a1f17]") text-[10px] font-black tracking-[0.25em] uppercase px-3 py-1 rounded-full">
+                                    @adv.DifficultyLevel
+                                </span>
+                                <span class="border-2 border-[#3b2a1e]/40 text-[10px] font-black tracking-[0.2em] uppercase px-3 py-1 rounded-full">
+                                    🎒 Gear $@adv.GearFeePerPerson.ToString("N0") / traveler
+                                </span>
+                            }
+                            else if (package is ResortPackage resort)
+                            {
+                                <span class="border-2 border-[#3b2a1e]/40 text-[10px] font-black tracking-[0.2em] uppercase px-3 py-1 rounded-full">
+                                    🧾 Resort tax @((resort.ResortTaxRate * 100).ToString("0.#"))%
+                                </span>
+                            }
+                        </div>
+
+                        <div class="text-[10px] font-bold tracking-[0.3em] uppercase text-[#3b2a1e]/50">Now Boarding To</div>
+                        <h1 class="text-3xl sm:text-5xl font-black tracking-tight leading-tight">@package.Name</h1>
+                        <div class="text-sm font-bold text-[#1f7a7a] mt-1">📍 @package.Country · $@package.BaseRatePerDay.ToString("N0") / day</div>
+
+                        <p class="mt-4 text-base leading-relaxed text-[#3b2a1e]/80 border-l-4 border-[#e8672a] pl-4 max-w-3xl">@package.Description</p>
+
+                        <!-- Perforation -->
+                        <div class="relative my-10">
+                            <div class="absolute -left-[3.25rem] sm:-left-[3.75rem] -top-3 w-6 h-6 rounded-full bg-[#f1e5c8]"></div>
+                            <div class="absolute -right-[3.25rem] sm:-right-[3.75rem] -top-3 w-6 h-6 rounded-full bg-[#f1e5c8]"></div>
+                            <div class="border-t-2 border-dashed border-[#3b2a1e]/30"></div>
+                        </div>
+
+                        <div class="grid md:grid-cols-5 gap-8 items-start">
+
+                            <!-- Baggage tag: inputs -->
+                            <div class="md:col-span-2">
+                                <div class="relative bg-[#e9a825] border-4 border-[#3b2a1e] rounded-2xl p-5 pt-10 shadow-[6px_6px_0_0_#3b2a1e] -rotate-1">
+                                    <!-- tag hole + string -->
+                                    <div class="absolute top-3 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-[#f8f0dc] border-4 border-[#3b2a1e]"></div>
+
+                                    <div class="flex items-center justify-between mb-5">
+                                        <h2 class="text-xs font-black tracking-[0.3em] uppercase">Baggage Tag</h2>
+                                        @if (IsBookingView)
+                                        {
+                                            <span class="text-[10px] font-black tracking-[0.2em] uppercase bg-[#3b2a1e] text-[#e9a825] px-2 py-0.5 rounded-full">Locked</span>
+                                        }
+                                    </div>
+
+                                    <!-- Days -->
+                                    <div class="mb-5">
+                                        <label class="block text-[11px] font-black tracking-[0.25em] uppercase mb-2">📅 Duration (Days)</label>
+                                        <div class="inline-flex items-center gap-2 @(IsBookingView ? "opacity-60" : "")">
+                                            <button disabled="@IsBookingView" @onclick="() => Days--"
+                                                    class="w-10 h-10 rounded-full bg-[#f8f0dc] border-4 border-[#3b2a1e] font-black hover:bg-[#e8672a] active:scale-90 transition disabled:cursor-not-allowed disabled:hover:bg-[#f8f0dc] disabled:active:scale-100">−</button>
+                                            <input disabled="@IsBookingView" type="number" min="1" max="60" @bind="Days" @bind:event="oninput"
+                                                   class="w-16 h-10 text-center text-xl font-black bg-[#f8f0dc] border-4 border-[#3b2a1e] rounded-xl focus:outline-none focus:border-[#e8672a] disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                                            <button disabled="@IsBookingView" @onclick="() => Days++"
+                                                    class="w-10 h-10 rounded-full bg-[#f8f0dc] border-4 border-[#3b2a1e] font-black hover:bg-[#1f7a7a] hover:text-white active:scale-90 transition disabled:cursor-not-allowed disabled:hover:bg-[#f8f0dc] disabled:hover:text-inherit disabled:active:scale-100">+</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Travelers -->
+                                    <div>
+                                        <label class="block text-[11px] font-black tracking-[0.25em] uppercase mb-2">👯 Party Size (Travelers)</label>
+                                        <div class="inline-flex items-center gap-2 @(IsBookingView ? "opacity-60" : "")">
+                                            <button disabled="@IsBookingView" @onclick="() => Travelers--"
+                                                    class="w-10 h-10 rounded-full bg-[#f8f0dc] border-4 border-[#3b2a1e] font-black hover:bg-[#e8672a] active:scale-90 transition disabled:cursor-not-allowed disabled:hover:bg-[#f8f0dc] disabled:active:scale-100">−</button>
+                                            <input disabled="@IsBookingView" type="number" min="1" max="20" @bind="Travelers" @bind:event="oninput"
+                                                   class="w-16 h-10 text-center text-xl font-black bg-[#f8f0dc] border-4 border-[#3b2a1e] rounded-xl focus:outline-none focus:border-[#e8672a] disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                                            <button disabled="@IsBookingView" @onclick="() => Travelers++"
+                                                    class="w-10 h-10 rounded-full bg-[#f8f0dc] border-4 border-[#3b2a1e] font-black hover:bg-[#1f7a7a] hover:text-white active:scale-90 transition disabled:cursor-not-allowed disabled:hover:bg-[#f8f0dc] disabled:hover:text-inherit disabled:active:scale-100">+</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- barcode -->
+                                    <div class="mt-6 flex items-end h-8 overflow-hidden" aria-hidden="true">
+                                        @for (int i = 0; i < 30; i++)
+                                        {
+                                            var w = ((package.Id * 7 + i * 13) % 4) + 1;
+                                            var gap = ((i * 5 + package.Id) % 3) + 1;
+                                            <span class="bg-[#3b2a1e] h-full inline-block" style="width:@(w)px;margin-right:@(gap)px"></span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Fare board: ledger -->
+                            <div class="md:col-span-3 bg-[#2a1f17] rounded-2xl border-[6px] border-[#3b2a1e] shadow-[0_10px_0_0_#1c1510] overflow-hidden">
+                                <div class="bg-[#1f7a7a] text-[#f4ead2] px-5 py-3 flex items-center justify-between">
+                                    <span class="font-black tracking-[0.35em] text-sm">FARE SUMMARY</span>
+                                    <span class="text-[10px] tracking-[0.3em] uppercase text-[#f4ead2]/70">Tarif · 料金</span>
+                                </div>
+
+                                <div class="p-5 space-y-4 text-[#f4ead2]">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <div class="text-[10px] font-bold tracking-[0.25em] uppercase text-[#f4ead2]/50">Base Fare</div>
+                                            <div class="text-xs font-bold text-[#f4ead2]/80">@Days days &times; @Travelers guests</div>
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            <span class="text-[#e9a825] text-xs font-black">$</span>
+                                            @Flaps(Subtotal.ToString("N2"), "text-[#f4ead2]", "w-5 h-7 text-sm")
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center justify-between gap-3 pb-4 border-b-2 border-dashed border-[#f4ead2]/20">
+                                        <div class="min-w-0">
+                                            <div class="text-[10px] font-bold tracking-[0.25em] uppercase text-[#f4ead2]/50">@(isAdv ? "Equipment & Guide" : "Hospitality Surcharge")</div>
+                                            <div class="text-xs font-bold text-[#f4ead2]/80">@(isAdv ? "Gear provisioning" : "Municipal & resort tax")</div>
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            <span class="text-[#e9a825] text-xs font-black">$</span>
+                                            @Flaps(Fees.ToString("N2"), "text-[#f4ead2]", "w-5 h-7 text-sm")
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div class="text-[10px] font-bold tracking-[0.3em] uppercase text-[#e9a825] mb-2">Total Fare</div>
+                                        <div class="flex items-center gap-1 flex-wrap">
+                                            <span class="text-[#e8672a] text-2xl font-black mr-1">$</span>
+                                            @Flaps(Total.ToString("N2"), "text-[#e9a825]", "w-7 h-11 text-2xl")
+                                        </div>
+                                    </div>
+
+                                    @if (IsBookingView)
+                                    {
+                                        <button @onclick="CancelBooking"
+                                                class="w-full bg-[#c8372d] hover:bg-[#f4ead2] hover:text-[#c8372d] text-white text-xs font-black tracking-[0.25em] uppercase py-3.5 px-6 rounded-full border-4 border-[#f4ead2] transition-colors flex items-center justify-center gap-3 cursor-pointer active:scale-95">
+                                            <span>Cancel Booking</span>
+                                            <span class="text-base">🗑️</span>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button @onclick="AddToItinerary"
+                                                class="w-full bg-[#e8672a] hover:bg-[#f4ead2] hover:text-[#3b2a1e] text-[#fff7e6] text-xs font-black tracking-[0.25em] uppercase py-3.5 px-6 rounded-full border-4 border-[#f4ead2] transition-colors flex items-center justify-center gap-3 cursor-pointer active:scale-95">
+                                            <span>Reserve Itinerary</span>
+                                            <span class="text-base">✈</span>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </main>
+
+    <div class="h-2 bg-[#1f7a7a] mt-4" aria-hidden="true"></div>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [SupplyParameterFromQuery] public Guid? BookingId { get; set; }
+
+    private TravelPackage? package;
+    private Booking? existingBooking;
+    private int _days = 3;
+    private int _travelers = 1;
+
+    private bool IsBookingView => existingBooking is not null;
+
+    private int Days { get => _days; set => _days = Math.Clamp(value, 1, 60); }
+    private int Travelers { get => _travelers; set => _travelers = Math.Clamp(value, 1, 20); }
+
+    private decimal Total => package?.CalculateTotal(Days, Travelers) ?? 0;
+    private decimal Subtotal => package?.CalculateSubtotal(Days, Travelers) ?? 0;
+    private decimal Fees => Total - Subtotal;
+
+    protected override void OnParametersSet()
+    {
+        package = Service.GetPackageById(Id);
+
+        // Fallback: Parse query manually if Blazor parameter binding is delayed
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        if (Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query).TryGetValue("bookingId", out var bookingIdStr) &&
+            Guid.TryParse(bookingIdStr, out var parsedGuid))
+        {
+            BookingId = parsedGuid;
+        }
+
+        if (BookingId.HasValue)
+        {
+            existingBooking = Service.GetBookings().FirstOrDefault(b => b.Id == BookingId.Value);
+            if (existingBooking is not null)
+            {
+                _days = existingBooking.Days;
+                _travelers = existingBooking.Travelers;
+                return;
+            }
+        }
+
+        existingBooking = null;
+        _days = 3;
+        _travelers = 1;
+    }
+
+    private void AddToItinerary()
+    {
+        if (package is null) return;
+        Service.AddBooking(new Booking(package, Days, Travelers));
+        Nav.NavigateTo("/itinerary", forceLoad: true);
+    }
+
+    private void CancelBooking()
+    {
+        if (existingBooking is null) return;
+        Service.RemoveBooking(existingBooking.Id);
+        Nav.NavigateTo("/itinerary", forceLoad: true);
+    }
+
+    // 3-letter "airport code" from the country (same as Home)
+    private static string Code(TravelPackage p) =>
+        (p.Country.Length >= 3 ? p.Country[..3] : p.Country).ToUpperInvariant();
+
+    // Reusable split-flap characters (Solari style, same as Home)
+    private RenderFragment Flaps(string text, string textCss, string sizeCss) => @<div class="flex items-center gap-0.5">
+        @foreach (var ch in text)
+        {
+            @if (ch == ',' || ch == '.')
+            {
+                <span class="text-[#f4ead2]/40 font-black">@ch</span>
+            }
+            else
+            {
+                <span class="@sizeCss @textCss relative bg-[#1c1510] font-black flex items-center justify-center rounded-[3px] tabular-nums shadow-[inset_0_-2px_0_rgba(0,0,0,0.6)]">
+                    @ch
+                    <span class="absolute inset-x-0 top-1/2 h-px bg-black/80"></span>
+                </span>
+            }
+        }
+    </div>;
+}
