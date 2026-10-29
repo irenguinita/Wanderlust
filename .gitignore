@@ -1,0 +1,15 @@
+## .NET build outputs
+bin/
+obj/
+bin/
+obj/
+**/bin/
+**/obj/
+node_modules/
+
+## Node & Tailwind build outputs
+node_modules/
+
+## OS metadata
+.DS_Store
+Thumbs.db
