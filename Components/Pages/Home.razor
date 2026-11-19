@@ -229,6 +229,9 @@
     private int previewDays = 3;
     private int? selectedId;
 
+    private List<TravelPackage> allPackages = new();
+    private int bookingCount;
+
     private readonly Dictionary<string, string> filters = new()
     {
         ["All"] = "All",
@@ -236,10 +239,16 @@
         ["Resort"] = "Retreats"
     };
 
-    private int BookingCount => Service?.GetBookings()?.Count ?? 0;
+    protected override async Task OnInitializedAsync()
+    {
+        allPackages = (await Service.GetPackagesAsync()).ToList();
+        bookingCount = (await Service.GetBookingsAsync()).Count;
+    }
+
+    private int BookingCount => bookingCount;
 
     private List<TravelPackage> FilteredList =>
-        (Service?.GetPackages() ?? Enumerable.Empty<TravelPackage>())
+        allPackages
         .Where(p => (filter == "All" ||
                     (filter == "Adventure" && p is AdventurePackage) ||
                     (filter == "Resort" && p is ResortPackage))

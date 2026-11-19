@@ -75,7 +75,7 @@
         else
         {
             <div class="space-y-8">
-                @foreach (var b in Service.GetBookings())
+                @foreach (var b in bookings)
                 {
                     var pkg = b.PackageItem;
                     var isAdv = pkg is AdventurePackage;
@@ -147,10 +147,21 @@
 </div>
 
 @code {
-    private int BookingCount => Service?.GetBookings()?.Count ?? 0;
-    private decimal GrandTotal => Service?.CalculateGrandTotal() ?? 0;
+    private List<Booking> bookings = new();
 
-    private void Cancel(Guid id) => Service?.RemoveBooking(id);
+    private int BookingCount => bookings.Count;
+    private decimal GrandTotal => Service.CalculateGrandTotal(bookings);
+
+    protected override async Task OnInitializedAsync()
+    {
+        bookings = await Service.GetBookingsAsync();
+    }
+
+    private async Task Cancel(Guid id)
+    {
+        await Service.RemoveBookingAsync(id);
+        bookings = await Service.GetBookingsAsync(); // reload so the list updates
+    }
 
     // 3-letter "airport code" from the country (same as Home)
     private static string Code(TravelPackage p) =>

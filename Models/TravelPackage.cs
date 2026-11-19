@@ -47,7 +47,7 @@ public class ResortPackage : TravelPackage
 
 public class Booking
 {
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; }
     public TravelPackage PackageItem { get; }
     public int Days { get; }
     public int Travelers { get; }
@@ -57,57 +57,90 @@ public class Booking
     public decimal Subtotal => PackageItem.CalculateSubtotal(Days, Travelers);
     public decimal Fees => TotalCost - Subtotal;
 
+    // Used when the user makes a NEW booking
     public Booking(TravelPackage packageItem, int days, int travelers)
     {
+        Id = Guid.NewGuid();
         PackageItem = packageItem;
         Days = days;
         Travelers = travelers;
         BookingDate = DateTime.Now;
         TotalCost = packageItem.CalculateTotal(days, travelers); // auto-calculated
     }
+
+    // Used when loading an existing booking back from the database
+    public Booking(Guid id, TravelPackage packageItem, int days, int travelers,
+                   DateTime bookingDate, decimal totalCost)
+    {
+        Id = id;
+        PackageItem = packageItem;
+        Days = days;
+        Travelers = travelers;
+        BookingDate = bookingDate;
+        TotalCost = totalCost;
+    }
 }
 
-// ENCAPSULATION: list is private, exposed only through methods
+// ENCAPSULATION: the database client is private, exposed only through methods
 public class ItineraryService
 {
-    private readonly List<Booking> _bookings = new();
-    private readonly List<TravelPackage> _packages;
+    private readonly Supabase.Client _supabase;
+    private bool _initialized;
+    private List<TravelPackage>? _packages; // cached after the first load
 
-    public ItineraryService()
+    public ItineraryService(Supabase.Client supabase)
     {
-        _packages = new List<TravelPackage>
-        {
-            new AdventurePackage { Id = 1, Name = "Himalaya Sky Trek", Country = "Nepal", BaseRatePerDay = 120m,
-                DifficultyLevel = "Extreme", GearFeePerPerson = 85m,
-                ImageUrl = Art("🏔️", "#38bdf8", "#6366f1"),
-                Description = "Climb above the clouds on legendary trails with sherpa guides and sunrise views you'll never forget!" },
-            new AdventurePackage { Id = 2, Name = "Amazon River Rafting", Country = "Brazil", BaseRatePerDay = 95m,
-                DifficultyLevel = "Moderate", GearFeePerPerson = 40m,
-                ImageUrl = Art("🛶", "#4ade80", "#0d9488"),
-                Description = "Paddle through wild rapids, spot toucans and pink dolphins, and camp under a billion stars." },
-            new AdventurePackage { Id = 3, Name = "Iceland Glacier Walk", Country = "Iceland", BaseRatePerDay = 140m,
-                DifficultyLevel = "Moderate", GearFeePerPerson = 55m,
-                ImageUrl = Art("🧊", "#67e8f9", "#3b82f6"),
-                Description = "Strap on crampons and explore blue ice caves, then soak in a steamy geothermal lagoon." },
-            new AdventurePackage { Id = 4, Name = "Patagonia Peak Chase", Country = "Chile", BaseRatePerDay = 160m,
-                DifficultyLevel = "Extreme", GearFeePerPerson = 110m,
-                ImageUrl = Art("🧗", "#fb923c", "#e11d48"),
-                Description = "Jagged peaks, roaring winds and bragging rights. Only for the truly fearless!" },
-
-            new ResortPackage { Id = 5, Name = "Maldives Overwater Villa", Country = "Maldives", BaseRatePerDay = 450m,
-                ImageUrl = Art("🏝️", "#22d3ee", "#2dd4bf"),
-                Description = "Wake up over crystal water, snorkel from your deck and sip coconuts all day long." },
-            new ResortPackage { Id = 6, Name = "Bali Beach Club Escape", Country = "Indonesia", BaseRatePerDay = 180m,
-                ImageUrl = Art("🌴", "#fbbf24", "#f472b6"),
-                Description = "Infinity pools, surf lessons, spa days and sunset parties on the sand." },
-            new ResortPackage { Id = 7, Name = "Santorini Sunset Suites", Country = "Greece", BaseRatePerDay = 320m,
-                ImageUrl = Art("🌅", "#f472b6", "#a78bfa"),
-                Description = "White-washed cliffside suites with the most dreamy sunsets in the Aegean." },
-            new ResortPackage { Id = 8, Name = "Boracay Bliss Resort", Country = "Philippines", BaseRatePerDay = 150m, ResortTaxRate = 0.10m,
-                ImageUrl = Art("🏖️", "#facc15", "#38bdf8"),
-                Description = "Powdery white sand, island hopping and fresh seafood by the shore." },
-        };
+        _supabase = supabase;
     }
+
+    private async Task EnsureInitializedAsync()
+    {
+        if (_initialized) return;
+        await _supabase.InitializeAsync();
+        _initialized = true;
+    }
+
+    // ---------- Packages ----------
+
+    public async Task<IReadOnlyList<TravelPackage>> GetPackagesAsync()
+    {
+        if (_packages is not null) return _packages;
+
+        await EnsureInitializedAsync();
+        var result = await _supabase.From<PackageRow>()
+            .Order("id", Supabase.Postgrest.Constants.Ordering.Ascending)
+            .Get();
+
+        _packages = result.Models.Select(ToPackage).ToList();
+        return _packages;
+    }
+
+    public async Task<TravelPackage?> GetPackageByIdAsync(int id)
+    {
+        var packages = await GetPackagesAsync();
+        return packages.FirstOrDefault(p => p.Id == id);
+    }
+
+    // Turns a database row into the right subclass (polymorphism)
+    private static TravelPackage ToPackage(PackageRow r) => r.PackageType switch
+    {
+        "Adventure" => new AdventurePackage
+        {
+            Id = r.Id, Name = r.Name, Country = r.Country,
+            BaseRatePerDay = r.BaseRatePerDay, Description = r.Description,
+            ImageUrl = Art(r.Emoji, r.ColorFrom, r.ColorTo),
+            DifficultyLevel = r.DifficultyLevel ?? "Moderate",
+            GearFeePerPerson = r.GearFeePerPerson ?? 0m
+        },
+        "Resort" => new ResortPackage
+        {
+            Id = r.Id, Name = r.Name, Country = r.Country,
+            BaseRatePerDay = r.BaseRatePerDay, Description = r.Description,
+            ImageUrl = Art(r.Emoji, r.ColorFrom, r.ColorTo),
+            ResortTaxRate = r.ResortTaxRate ?? 0.12m
+        },
+        _ => throw new InvalidOperationException($"Unknown package type: {r.PackageType}")
+    };
 
     // Offline-safe inline SVG artwork
     private static string Art(string emoji, string c1, string c2) =>
@@ -119,11 +152,51 @@ public class ItineraryService
             $"<circle cx='60' cy='200' r='80' fill='white' fill-opacity='.12'/>" +
             $"<text x='200' y='155' font-size='96' text-anchor='middle'>{emoji}</text></svg>");
 
-    public IReadOnlyList<TravelPackage> GetPackages() => _packages;
-    public TravelPackage? GetPackageById(int id) => _packages.FirstOrDefault(p => p.Id == id);
+    // ---------- Bookings ----------
 
-    public void AddBooking(Booking booking) => _bookings.Add(booking);
-    public void RemoveBooking(Guid id) => _bookings.RemoveAll(b => b.Id == id);
-    public IReadOnlyList<Booking> GetBookings() => _bookings;
-    public decimal CalculateGrandTotal() => _bookings.Sum(b => b.TotalCost);
+    public async Task<List<Booking>> GetBookingsAsync()
+    {
+        await EnsureInitializedAsync();
+        var packages = await GetPackagesAsync();
+
+        var result = await _supabase.From<BookingRow>()
+            .Order("booking_date", Supabase.Postgrest.Constants.Ordering.Ascending)
+            .Get();
+
+        var bookings = new List<Booking>();
+        foreach (var row in result.Models)
+        {
+            var package = packages.FirstOrDefault(p => p.Id == row.PackageId);
+            if (package is null) continue;
+            bookings.Add(new Booking(row.Id, package, row.Days, row.Travelers,
+                                     row.BookingDate, row.TotalCost));
+        }
+        return bookings;
+    }
+
+    public async Task AddBookingAsync(Booking booking)
+    {
+        await EnsureInitializedAsync();
+        await _supabase.From<BookingRow>().Insert(new BookingRow
+        {
+            Id = booking.Id,
+            PackageId = booking.PackageItem.Id,
+            Days = booking.Days,
+            Travelers = booking.Travelers,
+            BookingDate = booking.BookingDate,
+            TotalCost = booking.TotalCost
+        });
+    }
+
+    public async Task RemoveBookingAsync(Guid id)
+    {
+        await EnsureInitializedAsync();
+        await _supabase.From<BookingRow>()
+            .Where(b => b.Id == id)
+            .Delete();
+    }
+
+    // Takes the list you already loaded, so no extra database call
+    public decimal CalculateGrandTotal(IEnumerable<Booking> bookings)
+        => bookings.Sum(b => b.TotalCost);
 }

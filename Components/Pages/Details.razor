@@ -256,9 +256,9 @@
     private decimal Subtotal => package?.CalculateSubtotal(Days, Travelers) ?? 0;
     private decimal Fees => Total - Subtotal;
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
-        package = Service.GetPackageById(Id);
+        package = await Service.GetPackageByIdAsync(Id);
 
         // Fallback: Parse query manually if Blazor parameter binding is delayed
         var uri = Nav.ToAbsoluteUri(Nav.Uri);
@@ -270,7 +270,8 @@
 
         if (BookingId.HasValue)
         {
-            existingBooking = Service.GetBookings().FirstOrDefault(b => b.Id == BookingId.Value);
+            var bookings = await Service.GetBookingsAsync();
+            existingBooking = bookings.FirstOrDefault(b => b.Id == BookingId.Value);
             if (existingBooking is not null)
             {
                 _days = existingBooking.Days;
@@ -284,17 +285,17 @@
         _travelers = 1;
     }
 
-    private void AddToItinerary()
+    private async Task AddToItinerary()
     {
         if (package is null) return;
-        Service.AddBooking(new Booking(package, Days, Travelers));
+        await Service.AddBookingAsync(new Booking(package, Days, Travelers));
         Nav.NavigateTo("/itinerary", forceLoad: true);
     }
 
-    private void CancelBooking()
+    private async Task CancelBooking()
     {
         if (existingBooking is null) return;
-        Service.RemoveBooking(existingBooking.Id);
+        await Service.RemoveBookingAsync(existingBooking.Id);
         Nav.NavigateTo("/itinerary", forceLoad: true);
     }
 

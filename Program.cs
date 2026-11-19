@@ -1,12 +1,20 @@
 using FreshBlazorApp.Components;
 using FreshBlazorApp.Models;
 
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddSingleton<ItineraryService>();
+builder.Services.AddScoped<ItineraryService>();
+
+builder.Services.AddScoped<Supabase.Client>(_ =>
+    new Supabase.Client(
+        builder.Configuration["Supabase:Url"]!,
+        builder.Configuration["Supabase:Key"]!,
+        new Supabase.SupabaseOptions { AutoRefreshToken = true }));
 
 var app = builder.Build();
 
